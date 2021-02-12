@@ -104,6 +104,9 @@ int main() {
 	printf("\n* Insert desired pattern length: ");
 	scanf("%lli", &pat_len);
 
+	/* Start timer */
+	double total_time_init = omp_get_wtime();
+
 	printf("\n==> Maximum allowed number of holes: %i\n", (int) pat_len / H_ERR);
 	
 	char *sequence = malloc(seq_len * sizeof(char));
@@ -120,26 +123,33 @@ int main() {
 		return 4;
 	}
 
-	double time_init = omp_get_wtime();
+	double init_populate = omp_get_wtime();
 
 	// (Random) generation of sequence and pattern
 	populate(sequence, seq_len);
 	populate(pattern, pat_len);
+
+	double end_populate = omp_get_wtime();
 
 	for (int i = 0; i < pat_len; i++) {
 		rev_pat[i] = pattern[pat_len-i-1];
 	}
 	rev_pat[pat_len] = '\0';
 
-	// check patterns for errors (to be removed)
+	// uncomment to check patterns for errors
 	//printf("\nPattern : %s <---> %s \n", pattern, reverse_pat);
-	printf("\n\nSEQUENCE: %s;\nPATTERN: %s\n\n", sequence, pattern);
+	//printf("\n\nSEQUENCE: %s;\nPATTERN: %s\n\n", sequence, pattern);
+
+	double init_match = omp_get_wtime();
  
  	// Fwd sequencing with holes:
  	// Backward sequencing is the same as 'fwd', but with reversed
  	// pattern
 	c_fw.count = hole_forward(sequence, pattern, seq_len, pat_len, &c_fw);
 	c_bck.count = hole_forward(sequence, rev_pat, seq_len, pat_len, &c_bck);
+
+	double end_match = omp_get_wtime();
+
 	printf("\n%i correspondances found! (%i forward, %i backward)\n", (c_fw.count + c_bck.count), c_fw.count, c_bck.count);
 
 	printf("\nPositions of the matches:\n");
@@ -152,8 +162,11 @@ int main() {
 		printf("* %lli\n", c_bck.corresp[i] + pat_len);
 	}
 
-	double time_end = omp_get_wtime();
-	printf("\nTiming: %.5f\n\n", time_end-time_init);
+	double total_time_end = omp_get_wtime();
+
+  	printf("\nPOPULATION TIME: %.5f\n\n", end_populate - init_populate);
+  	printf("\nMATCH TIME: %.5f\n\n", end_match - init_match);
+  	printf("\nTOTAL TIME: %.5f\n\n", total_time_end - total_time_init);
 
 	free(sequence);
 	free(pattern);

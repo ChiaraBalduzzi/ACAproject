@@ -148,6 +148,9 @@ int main() {
 	printf("\n* Insert desired pattern length: ");
 	scanf("%lli", &pat_len);
 
+	/* Start timer */
+	double total_time_init = omp_get_wtime();
+
 	printf("\n==> Maximum allowed number of holes: %i\n", (int) pat_len / H_ERR);
 	
 	char *sequence = malloc(seq_len * sizeof(char));
@@ -163,7 +166,7 @@ int main() {
 		return 4;
 	}
 
-	double total_time_init = omp_get_wtime();
+	double init_populate = omp_get_wtime();
 
 	// (Random) generation of sequence and pattern
 	populate(sequence, seq_len);
@@ -189,8 +192,7 @@ int main() {
 
 	double total_time_end = omp_get_wtime();
 
-	// populate starts @ 'total_time_init'
-  	printf("\nPOPULATION TIME: %.5f\n\n", end_populate - total_time_init);
+  	printf("\nPOPULATION TIME: %.5f\n\n", end_populate - init_populate);
   	printf("\nMATCH TIME: %.5f\n\n", end_match - init_match);
   	printf("\nTOTAL TIME: %.5f\n\n", total_time_end - total_time_init);
 

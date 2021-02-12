@@ -145,7 +145,7 @@ void sequencing(char seq[], char pat[], long long int s_len, long long int p_len
 				#pragma omp critical(update)
 				{
 					c->corresp[c->tot_count] = i;
-					printf("\n** DEBUGGONE:\n");
+					printf("\n** THREAD %i FOUND A MATCH!\n", omp_get_thread_num());
 					printf("\nCounter - Position: %i - %lli\n", c->tot_count, c->corresp[c->tot_count]);
 					(c->count_bck)++;
 					(c->tot_count)++;
