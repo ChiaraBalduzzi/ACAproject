@@ -163,17 +163,23 @@ int main() {
 		return 4;
 	}
 
-	double time_init = omp_get_wtime();
+	double total_time_init = omp_get_wtime();
 
 	// (Random) generation of sequence and pattern
 	populate(sequence, seq_len);
 	populate(pattern, pat_len);
 
-	// check patterns for errors (to be removed)
-	printf("\n\nSEQUENCE: %s;\nPATTERN: %s\n\n", sequence, pattern);
+	double end_populate = omp_get_wtime();
+
+	// uncomment to check patterns for errors
+	//printf("\n\nSEQUENCE: %s;\nPATTERN: %s\n\n", sequence, pattern);
  
+	double init_match = omp_get_wtime();
+	
  	// Fwd & Bckwd sequencing with holes:
 	sequencing(sequence, pattern, seq_len, pat_len, &c);
+	double end_match = omp_get_wtime();
+
 	printf("\n%i correspondances found! (%i forward, %i backward)\n", c.tot_count, c.count_fwd, c.count_bck);
 
 	printf("\nPositions of the matches:\n");
@@ -181,8 +187,12 @@ int main() {
 		printf("* %lli\n", c.corresp[i] + 1);
 	}
 
-	double time_end = omp_get_wtime();
-	printf("\nTiming: %.5f\n\n", time_end-time_init);
+	double total_time_end = omp_get_wtime();
+
+	// populate starts @ 'total_time_init'
+  	printf("\nPOPULATION TIME: %.5f\n\n", end_populate - total_time_init);
+  	printf("\nMATCH TIME: %.5f\n\n", end_match - init_match);
+  	printf("\nTOTAL TIME: %.5f\n\n", total_time_end - total_time_init);
 
 	free(sequence);
 	free(pattern);
