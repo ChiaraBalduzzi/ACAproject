@@ -17,8 +17,7 @@ typedef struct {
 // Randomly generate a sequence of genomes:
 void populate(char str[], long long int length) {
 	const char az_base[4] = {'A', 'C', 'G', 'T'};
-	// Remove after testing
-	srand(4);
+	// srand(4);
 
 	for (int i=0; i<length; i++) {
 		int r = rand() % 4;
