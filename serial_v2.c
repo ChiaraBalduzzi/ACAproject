@@ -76,7 +76,7 @@ void sequencing(char seq[], char pat[], long long int s_len, long long int p_len
 				
 				if (j == p_len-1 && err_cnt <= max_holes) {
 					c->corresp[c->tot_count] = i;
-					printf("\n** DEBUGGONE:\n");
+					//printf("\n** DEBUGGONE:\n");
 					printf("\nCounter - Position: %i - %lli\n", c->tot_count, c->corresp[c->tot_count]);
 					(c->count_fwd)++;
 					(c->tot_count)++;
@@ -121,7 +121,7 @@ void sequencing(char seq[], char pat[], long long int s_len, long long int p_len
 				// No violation on holes constraints: correspondance found!
 				if (j == 0 && err_cnt <= max_holes) {
 					c->corresp[c->tot_count] = i;
-					printf("\n** DEBUGGONE:\n");
+					//printf("\n** DEBUGGONE:\n");
 					printf("\nCounter - Position: %i - %lli\n", c->tot_count, c->corresp[c->tot_count]);
 					(c->count_bck)++;
 					(c->tot_count)++;
@@ -153,8 +153,8 @@ int main() {
 
 	printf("\n==> Maximum allowed number of holes: %i\n", (int) pat_len / H_ERR);
 	
-	char *sequence = malloc(seq_len * sizeof(char));
-	char *pattern = malloc(pat_len * sizeof(char));
+	char *sequence = malloc((seq_len+1) * sizeof(char));
+	char *pattern = malloc((pat_len+1) * sizeof(char));
 
 	if(!sequence || !pattern) {
 		fprintf(stderr, "Malloc failed\n");

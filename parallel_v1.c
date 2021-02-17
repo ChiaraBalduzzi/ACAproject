@@ -41,10 +41,9 @@ int hole_forward(char seq[], char pat[], long long int s_len, long long int p_le
 
 	if (!c->corresp) {
 		fprintf(stderr, "Malloc failed\n");
-		return 2;
+		return -2;
 	}
 
-	//printf("\nDEBUG1 %lli;\n", p_len/omp_get_num_threads());
 	omp_set_num_threads(3);
 
 	// Parallelization pragma:
@@ -99,8 +98,6 @@ int hole_forward(char seq[], char pat[], long long int s_len, long long int p_le
 		count_L_hole = 0;
 	}
 
-	printf("\nDEBUG2\n");
-
 	// Trim memory:
 	c->corresp = realloc(c->corresp, c->count * sizeof(long long int));
 
@@ -123,9 +120,9 @@ int main() {
 
 	printf("\n==> Maximum allowed number of holes: %i\n", (int) pat_len / H_ERR);
 	
-	char *sequence = malloc(seq_len * sizeof(char));
-	char *pattern = malloc(pat_len * sizeof(char));
-	char *rev_pat = malloc(pat_len * sizeof(char));
+	char *sequence = malloc((seq_len+1) * sizeof(char));
+	char *pattern = malloc((pat_len+1) * sizeof(char));
+	char *rev_pat = malloc((pat_len+1) * sizeof(char));
 
 	if(!sequence || !pattern || !rev_pat) {
 		fprintf(stderr, "Malloc failed\n");

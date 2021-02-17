@@ -109,9 +109,9 @@ int main() {
 
 	printf("\n==> Maximum allowed number of holes: %i\n", (int) pat_len / H_ERR);
 	
-	char *sequence = malloc(seq_len * sizeof(char));
-	char *pattern = malloc(pat_len * sizeof(char));
-	char *rev_pat = malloc(pat_len * sizeof(char));
+	char *sequence = malloc((seq_len+1) * sizeof(char));
+	char *pattern = malloc((pat_len+1) * sizeof(char));
+	char *rev_pat = malloc((pat_len+1) * sizeof(char));
 
 	if(!sequence || !pattern || !rev_pat) {
 		fprintf(stderr, "Malloc failed\n");
