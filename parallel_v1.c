@@ -43,7 +43,7 @@ int hole_forward(char seq[], char pat[], long long int s_len, long long int p_le
 		return -2;
 	}
 
-	omp_set_num_threads(3);
+	omp_set_num_threads(16);
 
 	// Parallelization pragma:
 	#pragma omp parallel for schedule(dynamic) private(j,err_cnt,count_L_hole)
