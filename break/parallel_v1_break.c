@@ -6,6 +6,8 @@
 #define H_ERR 10
 #define H_WIDTH 1000
 
+int dim = 2;
+
 // Struct 'conteggio' contains number of matches as
 // well as their position in the sequence
 typedef struct {
@@ -26,97 +28,70 @@ void populate(char str[], long long int length) {
 	str[length] = '\0';
 }
 
-// Fwd sequencing in case of genes' undesired modifications
-int hole_forward(char seq[], char pat[], long long int s_len, long long int p_len, conteggio *c) {
-	// 'i' index: sequence starting position;
-	// 'j' index: pattern vs sub-sequence comparison.
-	int i = 0, j = 0, dim = 2;
-	int err_cnt = 0, count_L_hole = 0;
-	int max_holes = (int) p_len / H_ERR;
-	int max_L_hole = (int) p_len / H_WIDTH;
+long long int* hole_forward(char* sequence, char* pattern, int* count, int slen, int plen) {
+	long long int i = 0, j = 0;
+	int count_L_hole = 0, err_cnt = 0;
+	long long int *corresp = malloc(dim * sizeof(long long int));
+	long long int max_holes = plen / H_ERR; // H_ERR = 10
+	long long int max_L_hole = plen / H_WIDTH; // H_WIDTH = 1000
 
-	c->count = 0;
-	c->corresp = malloc(dim * sizeof(long long int));
-
-	if (!c->corresp) {
-		fprintf(stderr, "Malloc failed\n");
-		return -2;
-	}
-
-	//omp_set_num_threads(16);
-
-	// Parallelization pragma:
-	#pragma omp parallel for schedule(dynamic, p_len / omp_get_num_threads()) private(j,err_cnt,count_L_hole)
-
-	for (i = 0; i <= s_len-p_len; i++) {
-		err_cnt = 0;
-		count_L_hole = 0;
-
-		///////// DA TOGLIERE, solo per capire se funzionA /////
+	#pragma omp parallel for schedule(dynamic, plen/omp_get_num_threads()) private(j, err_cnt, count_L_hole)
+	
+	for (i=0; i<=slen-plen; i++) // scan the sequence
+	{
 		if (i == 0 ){
 			printf("NUM_THREADS %i \n", omp_get_num_threads());
-			printf("chunk dimension %lli \n", p_len / omp_get_num_threads());
+			printf("chunk dimension %lli \n", plen / omp_get_num_threads());
 		}
-		////////////
-		for (j = 0; j < p_len; j++) {
 
-			// Realloc first, if needed
-			#pragma omp critical(realloc)
+		count_L_hole = 0;
+		err_cnt = 0;
+		for (j = 0; j < plen-1; j++) // scan the pattern forward. plen-1 because the last char is '\0'
+		{
+			if (sequence[i+j] != pattern[j]) {
+				count_L_hole++;
+				//err_cnt++;
+
+				if (count_L_hole == 1) // starting the hole...
+					err_cnt++;
+
+				if (count_L_hole > max_L_hole || err_cnt > max_holes) // the largest contiguous hole is max_holes/100
+					break; // abandon this comparison
+			} else {
+				count_L_hole = 0;
+			}
+		}
+		
+		if (j == plen-1) // all the pattern matches (at least one of the two)
+		{
+			#pragma omp critical(realloc) 
 			{
-			if ((c->count) >= dim) {
+			if (*count >= dim) // max of corrispondences reached...
+			{
 				dim *= 2;
-				c->corresp = realloc(c->corresp, dim * sizeof(long long int));
-
-				if (!c->corresp) {
-					fprintf(stderr, "Realloc failed!\n");
-					//return 3;
+				corresp=(long long int*)realloc (corresp, dim*sizeof(long long int)); // ...reallocate with doubled dim
+				if (!corresp) {
+					perror("realloc failed");
+					//return NULL;
 				}
 			}
-			}
+			} // end Critical realloc
 
-			// Count only if the comparison is true given the
-			// max number of allowed 'holes':
-			if (err_cnt <= max_holes && count_L_hole <= max_L_hole) {
-				if (seq[i+j] != pat[j]) {
-					count_L_hole++;
-
-					if (count_L_hole == 1)
-						err_cnt++;
-
-					if (count_L_hole > max_L_hole) {
-						break; // Abandon this comparison
-					}
-				}
-					else {
-					count_L_hole = 0;
-				}
-
-				if (j == p_len-1 && err_cnt <= max_holes) {
-					#pragma omp critical(update)
-					{
-					c->corresp[c->count] = i;
-					//printf("\n** DEBUGGONE:\n");
-					//printf("\nCounter - Position: %i - %lli\n", c->count, c->corresp[c->count]);
-					(c->count)++;
-					}
-				}
-			}
+			#pragma omp critical(update)
+			{
+			corresp[*count]=i; // add the new correspondence index
+			(*count)++; // number of correspondences found
+			} // end Critical update
 		}
-
 	}
-
-	// Trim memory:
-	c->corresp = realloc(c->corresp, c->count * sizeof(long long int));
-
-	return c->count;
+	corresp = (long long int*) realloc(corresp, *count * sizeof(long long int)); // trim allocated memory
+	return corresp;
 }
 
 int main() {
-	// SET THREADS
-	omp_set_num_threads(4);
-
 	long long int seq_len, pat_len;
-	conteggio c_fw, c_bck;
+	//conteggio c_fw, c_bck;
+	omp_set_num_threads(4);
 
 	// User-acquired inputs:
 	printf("\n* Insert desired sequence length: ");
@@ -135,12 +110,12 @@ int main() {
 
 	if(!sequence || !pattern || !rev_pat) {
 		fprintf(stderr, "Malloc failed\n");
-		return 2;
+		return -2;
 	}
 
 	if (pat_len > seq_len) {
 		fprintf(stderr, "ERROR ON SELECTED SIZES!\n");
-		return 4;
+		return -4;
 	}
 
 	double init_populate = omp_get_wtime();
@@ -156,43 +131,47 @@ int main() {
 	}
 	rev_pat[pat_len] = '\0';
 
-	printf("Population performed!\n\n");
-
 	double init_match = omp_get_wtime();
 
  	// Fwd sequencing with holes:
- 	// Backward sequencing is the same as 'fwd', but with reversed
- 	// pattern
-	c_fw.count = hole_forward(sequence, pattern, seq_len, pat_len, &c_fw);
-	printf("Forward done!\n");
-	c_bck.count = hole_forward(sequence, rev_pat, seq_len, pat_len, &c_bck);
-	printf("Backward done!\n");
+ 	long long int *corresp_fw;
+ 	long long int *corresp_bk;
+ 	int count_fw = 0, count_bk = 0;
+	corresp_fw = hole_forward(sequence, pattern, &count_fw, seq_len, pat_len);
+	corresp_bk = hole_forward(sequence, rev_pat, &count_bk, seq_len, pat_len);
 
-	double end_match = omp_get_wtime();
+	double end_match = omp_get_wtime() - init_match;
 
-	printf("\n%i correspondances found! (%i forward, %i backward)\n", (c_fw.count + c_bck.count), c_fw.count, c_bck.count);
+	printf("\n%i correspondances found! (%i forward, %i backward)\n", (count_fw + count_bk), count_fw, count_bk);
 
 	printf("\nPositions of the matches:\n");
-	for (int i = 0; i < c_fw.count; i++) {
-		printf("* %lli\n", c_fw.corresp[i] + 1);
+	for (int i = 0; i < count_fw; i++) {
+		printf("* %lli\n", corresp_fw[i] + 1);
 	}
 
 	// In bckwd add pat_len as corresp. idx points to the end of the comparison
-	for (int i = 0; i < c_bck.count; i++) {
-		printf("* %lli\n", c_bck.corresp[i] + pat_len);
+	for (int i = 0; i < count_bk; i++) {
+		printf("* %lli\n", corresp_bk[i] + pat_len);
 	}
 
-	double total_time_end = omp_get_wtime();
+	double total_time_end = omp_get_wtime() - total_time_init;
 
   	printf("\nPOPULATION TIME: %.5f\n\n", end_populate - init_populate);
-  	printf("\nMATCH TIME: %.5f\n\n", end_match - init_match);
-  	printf("\nTOTAL TIME: %.5f\n\n", total_time_end - total_time_init);
+  	printf("\nMATCH TIME: %.5f\n\n", end_match);
+  	printf("\nTOTAL TIME: %.5f\n\n", total_time_end);
+
+  	printf("Percentage: %.5f\n", (end_match / total_time_end) * 100);
+
+  	/*int n = 8;
+  	double s = n + (1 - n) * (end_match / total_time_end);
+  	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);*/
 
 	free(sequence);
 	free(pattern);
 	free(rev_pat);
-	free(c_fw.corresp);
-	free(c_bck.corresp);
+	/*free(c_fw.corresp);
+	free(c_bck.corresp);*/
 
 	return 0;
 }
