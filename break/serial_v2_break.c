@@ -163,6 +163,26 @@ int main() {
 
 	free(sequence);
 	free(pattern);
+	
+	// EXPECTED SPEEDUPS
+  	int n = 4;
+  	double s = n + (1 - n) * (end_match / total_time_end);
+  	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
 
+	n = 8;
+  	double s = n + (1 - n) * (end_match / total_time_end);
+  	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
+	n = 16;
+  	double s = n + (1 - n) * (end_match / total_time_end);
+  	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
+	
+	n = 24;
+  	double s = n + (1 - n) * (end_match / total_time_end);
+  	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
+	
 	return 0;
 }
