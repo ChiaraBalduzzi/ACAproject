@@ -147,16 +147,31 @@ int main() {
 
   	printf("Percentage: %.5f\n", (end_match / total_time_end) * 100);
 
-  	int n = 16;
-  	double s = n + (1 - n) * (end_match / total_time_end);
-  	s = n / s;
-  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
-
 	free(sequence);
 	free(pattern);
 	free(rev_pat);
 	/*free(c_fw.corresp);
 	free(c_bck.corresp);*/
+	
+	// ESPECTED SPEEDUPS 
+  	int n = 4;
+  	double s = n + (1 - n) * (end_match / total_time_end);
+  	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
 
+	n = 8;
+  	double s = n + (1 - n) * (end_match / total_time_end);
+  	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
+	n = 16;
+  	double s = n + (1 - n) * (end_match / total_time_end);
+  	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
+	
+	n = 24;
+  	double s = n + (1 - n) * (end_match / total_time_end);
+  	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
+	
 	return 0;
 }
