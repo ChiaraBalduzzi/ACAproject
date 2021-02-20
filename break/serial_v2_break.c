@@ -8,13 +8,6 @@
 
 int dim = 2;
 
-// Struct 'conteggio' contains number of matches as
-// well as their position in the sequence
-typedef struct {
-	int count;
-	long long int *corresp;
-} conteggio;
-
 // Randomly generate a sequence of genomes:
 void populate(char str[], long long int length) {
 	const char az_base[4] = {'A', 'C', 'G', 'T'};
@@ -29,28 +22,28 @@ void populate(char str[], long long int length) {
 }
 
 long long int* hole_forward(char* sequence, char* pattern, int* count, int slen, int plen) {
-	long long int i = 0, j = 0, k = 0;
+	long long int i = 0, j = 0, k = 0; // counters: 'j' for fwd, 'k' for backwd
 	int count_L_hole = 0, err_cnt = 0;
+
 	long long int *corresp = malloc(dim * sizeof(long long int));
 	long long int max_holes = plen / H_ERR; // H_ERR = 10
 	long long int max_L_hole = plen / H_WIDTH; // H_WIDTH = 1000
 	
-	for (i=0; i<=slen-plen; i++) // scan the sequence
-	{
+	for (i = 0; i <= slen-plen; i++) {
 
 		count_L_hole = 0;
 		err_cnt = 0;
-		for (j = 0; j < plen-1; j++) // scan the pattern forward. plen-1 because the last char is '\0'
-		{
+
+		/* Forward */
+		for (j = 0; j < plen-1; j++) {
 			if (sequence[i+j] != pattern[j]) {
 				count_L_hole++;
-				//err_cnt++;
 
 				if (count_L_hole == 1) // starting the hole...
 					err_cnt++;
 
-				if (count_L_hole > max_L_hole || err_cnt > max_holes) // the largest contiguous hole is max_holes/100
-					break; // abandon this comparison
+				if (count_L_hole > max_L_hole || err_cnt > max_holes)
+					break; // abandon comparison
 			} else {
 				count_L_hole = 0;
 			}
@@ -59,7 +52,7 @@ long long int* hole_forward(char* sequence, char* pattern, int* count, int slen,
 		count_L_hole = 0;
 		err_cnt = 0;
 
-		// Backward:
+		/* Backward */
 		for (k = 0; k < plen-1; k++) {
 			if (sequence[i+k] != pattern[plen-2-k]) {
 				count_L_hole++;
@@ -74,29 +67,38 @@ long long int* hole_forward(char* sequence, char* pattern, int* count, int slen,
 			}
 		}
 		
-		if (j == plen-1 || k == plen-1) // all the pattern matches (at least one of the two)
+		if (j == plen-1 || k == plen-1) // new corresp. found if we get to end of pattern!
 		{
-			if (*count >= dim) // max of corrispondences reached...
-			{
+			if (*count >= dim) {
 				dim *= 2;
-				corresp=(long long int*)realloc (corresp, dim*sizeof(long long int)); // ...reallocate with doubled dim
+				corresp=(long long int*)realloc (corresp, dim*sizeof(long long int));
 				if (!corresp) {
 					perror("realloc failed");
-					//return NULL;
 				}
 			}
 
-			corresp[*count]=i; // add the new correspondence index
-			(*count)++; // number of correspondences found
+			corresp[*count]=i;
+			(*count)++;
 		}
 	}
+
 	corresp = (long long int*) realloc(corresp, *count * sizeof(long long int)); // trim allocated memory
 	return corresp;
 }
 
+void print_speedup(double f, int n) {
+	double s = 0;
+
+	s = n + (1 - n) * f;
+	s = n / s;
+  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
+}
+
 int main() {
 	long long int seq_len, pat_len;
-	//conteggio c_fw, c_bck;
+	long long int *corresp;
+ 	int count = 0;
+	double f = 0;
 
 	// User-acquired inputs:
 	printf("\n* Insert desired sequence length: ");
@@ -128,16 +130,12 @@ int main() {
 	populate(sequence, seq_len);
 	populate(pattern, pat_len);
 
-	double end_populate = omp_get_wtime();
+	double end_populate = omp_get_wtime() - init_populate;
 
 	double init_match = omp_get_wtime();
 
  	// Fwd sequencing with holes:
- 	long long int *corresp;
- 	//long long int *corresp_bk;
- 	int count = 0;
 	corresp = hole_forward(sequence, pattern, &count, seq_len, pat_len);
-	//corresp_bk = hole_forward(sequence, rev_pat, &count_bk, seq_len, pat_len);
 
 	double end_match = omp_get_wtime() - init_match;
 
@@ -150,39 +148,24 @@ int main() {
 
 	double total_time_end = omp_get_wtime() - total_time_init;
 
-  	printf("\nPOPULATION TIME: %.5f\n\n", end_populate - init_populate);
+  	printf("\nPOPULATION TIME: %.5f\n\n", end_populate);
   	printf("\nMATCH TIME: %.5f\n\n", end_match);
   	printf("\nTOTAL TIME: %.5f\n\n", total_time_end);
 
-  	printf("Percentage: %.5f\n", (end_match / total_time_end) * 100);
+  	f = end_match / total_time_end; // Amdahl law fraction
 
-  	int n = 4;
-  	double s = n + (1 - n) * (end_match / total_time_end);
-  	s = n / s;
-  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
+  	printf("* Percentage: %.5f\n\n", f * 100);
+
+  	// Expected speedups
+  	int n[5] = {2, 4, 8, 16, 24};
+
+	for (int i = 0; i < 5; i++) {
+		print_speedup(f, n[i]);
+	}
 
 	free(sequence);
 	free(pattern);
-	
-	// EXPECTED SPEEDUPS
-  	int n = 4;
-  	double s = n + (1 - n) * (end_match / total_time_end);
-  	s = n / s;
-  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
-
-	n = 8;
-  	double s = n + (1 - n) * (end_match / total_time_end);
-  	s = n / s;
-  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
-	n = 16;
-  	double s = n + (1 - n) * (end_match / total_time_end);
-  	s = n / s;
-  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
-	
-	n = 24;
-  	double s = n + (1 - n) * (end_match / total_time_end);
-  	s = n / s;
-  	printf("Expected speedup for %i cores: %.5f\n\n", n, s);
+	free(corresp);
 	
 	return 0;
 }
