@@ -9,7 +9,7 @@
 int dim = 2;
 
 // Randomly generate a sequence of genomes:
-void populate(char str[], long long int length) {
+void generate(char str[], long long int length) {
 	const char az_base[4] = {'A', 'C', 'G', 'T'};
 	// srand(4);
 
@@ -21,7 +21,7 @@ void populate(char str[], long long int length) {
 	str[length] = '\0';
 }
 
-long long int* hole_forward(char* sequence, char* pattern, int* count, int slen, int plen) {
+long long int* search_fwd(char* sequence, char* pattern, int* count, int slen, int plen) {
 	long long int i = 0, j = 0;
 	int count_L_hole = 0, err_cnt = 0;
 	long long int *corresp = malloc(dim * sizeof(long long int));
@@ -31,11 +31,6 @@ long long int* hole_forward(char* sequence, char* pattern, int* count, int slen,
 	#pragma omp parallel for schedule(dynamic, plen/omp_get_num_threads()) private(j, err_cnt, count_L_hole)
 	
 	for (i=0; i<=slen-plen; i++) {
-
-		if (i == 0) {
-			printf("NUM_THREADS %i \n", omp_get_num_threads());
-			printf("chunk dimension %i \n", plen / omp_get_num_threads());
-		}
 
 		count_L_hole = 0;
 		err_cnt = 0;
@@ -115,13 +110,13 @@ int main() {
 		return -4;
 	}
 
-	double init_populate = omp_get_wtime();
+	double init_generate = omp_get_wtime();
 
 	// (Random) generation of sequence and pattern
-	populate(sequence, seq_len);
-	populate(pattern, pat_len);
+	generate(sequence, seq_len);
+	generate(pattern, pat_len);
 
-	double end_populate = omp_get_wtime() - init_populate;
+	double end_generate = omp_get_wtime() - init_generate;
 
 	for (int i = 0; i < pat_len; i++) {
 		rev_pat[i] = pattern[pat_len-i-1];
@@ -131,8 +126,8 @@ int main() {
 	double init_match = omp_get_wtime();
 
  	// Fwd sequencing with holes:
-	corresp_fw = hole_forward(sequence, pattern, &count_fw, seq_len, pat_len);
-	corresp_bk = hole_forward(sequence, rev_pat, &count_bk, seq_len, pat_len);
+	corresp_fw = search_fwd(sequence, pattern, &count_fw, seq_len, pat_len);
+	corresp_bk = search_fwd(sequence, rev_pat, &count_bk, seq_len, pat_len);
 
 	double end_match = omp_get_wtime() - init_match;
 
@@ -150,7 +145,7 @@ int main() {
 
 	double total_time_end = omp_get_wtime() - total_time_init;
 
-  	printf("\nPOPULATION TIME: %.5f\n\n", end_populate);
+  	printf("\nPOPULATION TIME: %.5f\n\n", end_generate);
   	printf("\nMATCH TIME: %.5f\n\n", end_match);
   	printf("\nTOTAL TIME: %.5f\n\n", total_time_end);
 

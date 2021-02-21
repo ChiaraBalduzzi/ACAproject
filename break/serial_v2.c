@@ -9,7 +9,7 @@
 int dim = 2;
 
 // Randomly generate a sequence of genomes:
-void populate(char str[], long long int length) {
+void generate(char str[], long long int length) {
 	const char az_base[4] = {'A', 'C', 'G', 'T'};
 	// srand(4);
 
@@ -21,7 +21,7 @@ void populate(char str[], long long int length) {
 	str[length] = '\0';
 }
 
-long long int* hole_forward(char* sequence, char* pattern, int* count, int slen, int plen) {
+long long int* sequencing(char* sequence, char* pattern, int* count, int slen, int plen) {
 	long long int i = 0, j = 0, k = 0; // counters: 'j' for fwd, 'k' for backwd
 	int count_L_hole = 0, err_cnt = 0;
 
@@ -124,18 +124,18 @@ int main() {
 		return -4;
 	}
 
-	double init_populate = omp_get_wtime();
+	double init_generate = omp_get_wtime();
 
 	// (Random) generation of sequence and pattern
-	populate(sequence, seq_len);
-	populate(pattern, pat_len);
+	generate(sequence, seq_len);
+	generate(pattern, pat_len);
 
-	double end_populate = omp_get_wtime() - init_populate;
+	double end_generate = omp_get_wtime() - init_generate;
 
 	double init_match = omp_get_wtime();
 
  	// Fwd sequencing with holes:
-	corresp = hole_forward(sequence, pattern, &count, seq_len, pat_len);
+	corresp = sequencing(sequence, pattern, &count, seq_len, pat_len);
 
 	double end_match = omp_get_wtime() - init_match;
 
@@ -148,7 +148,7 @@ int main() {
 
 	double total_time_end = omp_get_wtime() - total_time_init;
 
-  	printf("\nPOPULATION TIME: %.5f\n\n", end_populate);
+  	printf("\nPOPULATION TIME: %.5f\n\n", end_generate);
   	printf("\nMATCH TIME: %.5f\n\n", end_match);
   	printf("\nTOTAL TIME: %.5f\n\n", total_time_end);
 

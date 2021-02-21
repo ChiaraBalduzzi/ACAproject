@@ -7,7 +7,7 @@
 #define H_WIDTH 1000
 
 // Randomly generate a sequence of genomes:
-void populate(char str[], long long int length) {
+void generate(char str[], long long int length) {
 	const char az_base[4] = {'A', 'C', 'G', 'T'};
 	// srand(4);
 
@@ -19,7 +19,7 @@ void populate(char str[], long long int length) {
 	str[length] = '\0';
 }
 
-long long int* hole_forward(char* sequence, char* pattern, int* count, int slen, int plen) {
+long long int* sequencing(char* sequence, char* pattern, int* count, int slen, int plen) {
 	long long int i = 0, j = 0, k = 0; // counters: 'j' for fwd, 'k' for backwd
 	// counters for width of current hole and number of holes
 	int count_L_hole = 0, err_cnt = 0;
@@ -38,11 +38,6 @@ long long int* hole_forward(char* sequence, char* pattern, int* count, int slen,
 	#pragma omp parallel for private (count_L_hole,err_cnt,j) schedule (dynamic,plen)
 
 	for (i=0; i<=slen-plen; i++) {
-
-		if (i == 0) {
-			printf("NUM_THREADS %i\n", omp_get_num_threads());
-			printf("Chunk dimension %i\n", plen / omp_get_num_threads());
-		}
 
 		count_L_hole = 0;
 		err_cnt = 0;
@@ -113,17 +108,11 @@ int main() {
 	long long int *corresp;
  	int count = 0;
 
-	int n_thr;
-
 	// User-acquired inputs:
 	printf("\n* Insert desired sequence length: ");
 	scanf("%lli", &seq_len);
 	printf("\n* Insert desired pattern length: ");
 	scanf("%lli", &pat_len);
-	printf("\n* Insert number of threads: ");
-	scanf("%i", &n_thr);
-
-	omp_set_num_threads(n_thr);
 
 	/* Start timer */
 	double total_time_init = omp_get_wtime();
@@ -143,17 +132,17 @@ int main() {
 		return -4;
 	}
 
-	double init_populate = omp_get_wtime();
+	double init_generate = omp_get_wtime();
 
 	// (Random) generation of sequence and pattern
-	populate(sequence, seq_len);
-	populate(pattern, pat_len);
+	generate(sequence, seq_len);
+	generate(pattern, pat_len);
 
-	double end_populate = omp_get_wtime() - init_populate;
+	double end_generate = omp_get_wtime() - init_generate;
 	double init_match = omp_get_wtime();
 
  	// Fwd sequencing with holes:
-	corresp = hole_forward(sequence, pattern, &count, seq_len, pat_len);
+	corresp = sequencing(sequence, pattern, &count, seq_len, pat_len);
 
 	double end_match = omp_get_wtime() - init_match;
 
@@ -166,7 +155,7 @@ int main() {
 
 	double total_time_end = omp_get_wtime() - total_time_init;
 
-  	printf("\n* POPULATION TIME: %.5f\n\n", end_populate);
+  	printf("\n* POPULATION TIME: %.5f\n\n", end_generate);
   	printf("\n* MATCH TIME: %.5f\n\n", end_match);
   	printf("\n* TOTAL TIME: %.5f\n\n", total_time_end);
 
