@@ -81,9 +81,9 @@ long long int* sequencing(char* sequence, char* pattern, int* count, int slen, i
 	} /* end forward task */
 
 	/* Backward */
-	#pragma omp task firstprivate(count_L_hole,err_cnt) private(i,j)
+	#pragma omp task firstprivate(count_L_hole,err_cnt) private(i,k)
 	{
-	#pragma omp parallel for private(count_L_hole,err_cnt,j) schedule(dynamic,plen)
+	#pragma omp parallel for private(count_L_hole,err_cnt,k) schedule(dynamic,plen)
 
 	for (i = 0; i <= slen-plen; i++) {
 
